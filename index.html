@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>JSON/Atom Custom Search API Example</title>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <div id="content"></div>
+    <script>
+	var biebresults = [], start = 1;
+	function getBieb(startNumber){
+		$.getJSON("https://www.googleapis.com/customsearch/v1?key=AIzaSyBIRFE10pgKdl6P_lrH1EpKN2FVDshe8-A&searchType=image&imgtype=photo&imgsz=medium|large|xlarge&cx=012658620236441855502:gttqnmoh0eu&q=asdf&num=10&start="+startNumber, function(results){
+			alert(results.items);
+			alert(results.items.length);
+			for (var i = 0; i < results.items.length; i++) 
+				biebresults.push(results.items[i]);
+				
+			alert(biebresults.length);
+			if(biebresults.length < 50){
+				start = start + 10;
+				getBieb(start);
+			} else {
+				// Do something with images.
+				
+				 var contentDiv = document.getElementById('content');
+				 contentDiv.innerHTML = '';
+
+				  // Loop through our results, printing them to the page.
+				  
+				  for (var i = 0; i < biebresults.length; i++) {
+					// For each result write it's title and image to the screen
+					var item = biebresults[i];
+					
+					var imgContainer = document.createElement('div');
+				
+					if(typeof(item.pagemap) != "undefined" ){
+						if(typeof(item.pagemap.cse_thumbnail) != "undefined"){
+							var newImg = document.createElement('img');
+							newImg.src = item.pagemap.cse_thumbnail[0].src;
+							imgContainer.appendChild(newImg);
+							contentDiv.appendChild(imgContainer);
+						}
+					}
+				
+				  }
+			}
+		});
+	}
+	getBieb(start);
+
+    </script>
+    <div id='content'></div>
+  </body>
+</html>
+
+
+

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<title>indexeddb</title>
+	<style type="text/css">
+		
+		<!--#scores li span { display: none; }-->
+	</style>
+	    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 20px;
+        padding-bottom: 60px;
+      }
+
+      /* Custom container */
+      .container {
+        margin: 0 auto;
+        max-width: 1000px;
+      }
+      .container > hr {
+        margin: 60px 0;
+      }
+
+      /* Main marketing message and sign up button */
+      .jumbotron {
+        margin: 80px 0;
+        text-align: center;
+      }
+      .jumbotron h1 {
+        font-size: 100px;
+        line-height: 1;
+      }
+      .jumbotron .lead {
+        font-size: 24px;
+        line-height: 1.25;
+      }
+      .jumbotron .btn {
+        font-size: 21px;
+        padding: 14px 24px;
+      }
+
+      /* Supporting marketing content */
+      .marketing {
+        margin: 60px 0;
+      }
+      .marketing p + h4 {
+        margin-top: 28px;
+      }
+
+
+      /* Customize the navbar links to be fill the entire space of the .navbar */
+      .navbar .navbar-inner {
+        padding: 0;
+      }
+      .navbar .nav {
+        margin: 0;
+        display: table;
+        width: 100%;
+      }
+      .navbar .nav li {
+        display: table-cell;
+        width: 1%;
+        float: none;
+      }
+      .navbar .nav li a {
+        font-weight: bold;
+        text-align: center;
+        border-left: 1px solid rgba(255,255,255,.75);
+        border-right: 1px solid rgba(0,0,0,.1);
+      }
+      .navbar .nav li:first-child a {
+        border-left: 0;
+        border-radius: 3px 0 0 3px;
+      }
+      .navbar .nav li:last-child a {
+        border-right: 0;
+        border-radius: 0 3px 3px 0;
+      }
+      .imageArea img {
+          margin-right: 7px;
+          margin-bottom: 12px;
+      }
+
+.highlight {
+    -webkit-transition: font-size 1s ease, text-shadow 1s ease;
+    -moz-transition: font-size 1s ease, text-shadow 1s ease;
+    -ms-transition: font-size 1s ease, text-shadow 1s ease;
+    -o-transition: font-size 1s ease, text-shadow 1s ease;
+    transition: font-size 1s ease, text-shadow 1s ease;
+}
+.highlight:hover,
+.highlight.glow {
+    text-shadow: 0 0 10px red;
+    font-size: 32pt !important;
+}
+
+.showUnderline {
+    border-bottom: 2px solid #666;text-align:center;font-size: 12pt; font-weight: bold;
+}
+    </style>
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+	<script type="text/javascript" charset="utf-8">
+		// events
+		$(function () {
+			$('[type=submit]').on('click', function (e) {
+				UserScoreDb.indexedDB.addScore($('#score').val());
+				$('#score').val('');
+				return false;
+			});
+
+			$('#scores').on('click', '.delete', function (e) {
+				UserScoreDb.indexedDB.deleteScore(parseInt($(this).parent().find('span').text()));
+				return false;
+			});
+			$('#showList').on('click', function(e){
+				$('#scores').html('');
+				UserScoreDb.indexedDB.getAllScoreItems(renderTodo);
+				return false;
+			});
+
+			UserScoreDb.indexedDB.open(); // open displays the data previously saved
+			
+		});
+		
+		
+
+		// indexeddb
+		window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
+		window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction;
+		window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange;
+
+		var UserScoreDb = {}; // namespace (not required)
+		UserScoreDb.indexedDB = {}; // open, addScore, getAllTodoItems, deleteTodo - are own methods
+		UserScoreDb.indexedDB.db = null; // holds the real instance of the indexedDB
+
+		// open/create
+		UserScoreDb.indexedDB.open = function() {
+			// you must increment the version by +1 in order to get the 'onupgradeneeded' event called
+			// ONLY there you can modify the db itself e.g create new object stores and etc.
+			var request = indexedDB.open('scores', 2);
+			console.log(request);
+			
+			request.onupgradeneeded = function(e) {
+				console.log('onupgradeneeded', e);
+
+				UserScoreDb.indexedDB.db = e.target.result;
+				var db = UserScoreDb.indexedDB.db;
+				console.log('db', db);
+
+				if(!db.objectStoreNames.contains('score')){
+					db.createObjectStore('score', {keyPath: 'id', autoIncrement: true});
+				}
+			};
+
+			request.onsuccess = function(e) {
+				console.log('onsuccess', e);
+				UserScoreDb.indexedDB.db = e.target.result;
+				var db = UserScoreDb.indexedDB.db;
+				console.log('db', db);
+
+				// START chrome (obsolete - will be removed)
+				if (typeof db.setVersion === 'function') {
+					var versionReq = db.setVersion(2);
+					versionReq.onsuccess = function (e) {
+						console.log('versionReq', e);
+
+						UserScoreDb.indexedDB.db = e.target.source; // instead of result
+						var db = UserScoreDb.indexedDB.db;
+						console.log('db', db);
+
+						if(!db.objectStoreNames.contains('score')){
+							db.createObjectStore('score', {keyPath: 'id', autoIncrement: true});
+						}
+					}
+				}
+				// END chrome
+				//UserScoreDb.indexedDB.getAllScoreItems();
+			};
+		};
+
+		// add
+		UserScoreDb.indexedDB.addScore = function(score) {
+			var db = UserScoreDb.indexedDB.db;
+			var trans = db.transaction(['score'], 'readwrite');
+			var store = trans.objectStore('score');
+			var request = store.put({
+				'score': score
+			});
+
+			request.onsuccess = function(e) {
+				// Re-render all the todo's
+				//UserScoreDb.indexedDB.getAllScoreItems();
+			};
+
+			request.onerror = function(e) {
+				console.log(e.value);
+			};
+		};
+
+		// read
+		UserScoreDb.indexedDB.getAllScoreItems = function(renderer) {
+			
+			var db = UserScoreDb.indexedDB.db;
+			var trans = db.transaction(['score'], 'readwrite');
+			var store = trans.objectStore('score');
+
+			// Get everything in the store;
+			var keyRange = IDBKeyRange.lowerBound(0);
+			var cursorRequest = store.openCursor(keyRange);
+
+			cursorRequest.onsuccess = function(e) {
+				var result = e.target.result;
+				if(!!result == false)
+					return;
+
+				renderer(result.value);
+				result.continue();
+			};
+
+			cursorRequest.onerror = UserScoreDb.indexedDB.onerror;
+		};
+
+		// delete
+		UserScoreDb.indexedDB.deleteScore = function(id) {
+			var db = UserScoreDb.indexedDB.db;
+			var trans = db.transaction(['score'], 'readwrite');
+			var store = trans.objectStore('score');
+
+			var request = store.delete(id);
+
+			request.onsuccess = function(e) {
+				//UserScoreDb.indexedDB.getAllScoreItems();  // Refresh the screen
+			};
+
+			request.onerror = function(e) {
+				console.log(e);
+			};
+		};
+
+		// helper
+		function renderTodo(row) {
+			
+			var li = '<li>'+row.score+'<a href="#" class="delete">[Delete]</a> <span>'+row.timeStamp+'</span> <div>'+row.name+'</div></li>';
+			$('#scores').append(li);
+		}
+		
+		function deleteDb()
+		{
+			try{
+				var req = window.indexedDB.deleteDatabase('scores');
+				req.onsuccess = function(event)
+				{
+					var db = event.result;
+					console.log("indexedDB: scores deleted");
+				}
+				req.onerror = function(event)
+				{
+					console.log("delete DB error " + event.message);
+				}
+			}
+			catch(e)
+			{
+				console.log(e);
+			}
+		}
+	</script>
+</head>
+<body>
+<section class="shell">
+	<div>
+	<input type="text" id="score" name="score" placeholder="What was the score?" />
+	<input type="submit" value="Add Your Score" />
+	<input type="button" id="showList" value="Show List" />
+	
+	<ul id="scores">
+
+	</ul>
+</section>
+</body>
+</html>
