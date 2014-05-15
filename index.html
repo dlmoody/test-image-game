@@ -11,8 +11,8 @@
 	var biebresults = [], start = 1;
 	function getBieb(startNumber){
 		$.getJSON("https://www.googleapis.com/customsearch/v1?key=AIzaSyBIRFE10pgKdl6P_lrH1EpKN2FVDshe8-A&searchType=image&imgtype=photo&imgsz=medium|large|xlarge&cx=012658620236441855502:gttqnmoh0eu&q=asdf&num=10&start="+startNumber, function(results){
-			alert(results.items);
-			alert(results.items.length);
+			console.log('results.items:%O', results.items);
+			console.log('results:%O', results);
 			for (var i = 0; i < results.items.length; i++) 
 				biebresults.push(results.items[i]);
 				
